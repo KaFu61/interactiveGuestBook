@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
 using Windows.Kinect;
-using Assets.Scripts;
 
 public class DepthData : MonoBehaviour {
 	public GameObject DepthSrcMan;
@@ -12,14 +11,18 @@ public class DepthData : MonoBehaviour {
 	private int width = 512;
 	private int height = 424;
 
-	private DrawCircle point;
-
-
 	//Angabe in mm
 	private float leinwand = 1000;
 
 	// 1 -> x, 2 -> y, 3 -> minval
-	private ArrayList gezeichnetePunkte = new ArrayList();
+	private ArrayList drawedPoints = new ArrayList();
+
+	//Create new GameObject (Circle)
+	public GameObject theCircle;
+	private GameObject instance;
+
+	//Angabe in mm
+	private int treshold = 30;
 
 	// Use this for initialization
 	void Start() {
@@ -46,21 +49,25 @@ public class DepthData : MonoBehaviour {
 
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
-				if (depths[y * width + x] < leinwand) {
-					if (minval > depths[y * width + x] && depths[y * width + x] != 0) {
+
+				if (depths[y * width + x] < (leinwand - treshold) && depths[y * width + x] != 0) {
+
+					//check the depths of the pixel next to the current to reduce voice
+					if ((depths[y * width + x] - depths[y * width + x - 1]) <= 100) {
 						minval = depths[y * width + x];
 
 						minval_x = x;
 						minval_y = y;
+
+						Vector3 current_min_val = new Vector3(minval_x, minval_y, minval);
+						instance = (GameObject)Instantiate(theCircle, new Vector3(minval_x, minval_y, 1), transform.rotation);
 					}
+
 				}
+
 			}
 		}
-
+		
 		Debug.Log(minval + "-" + minval_x + "-" + minval_y);
-		Vector3 current_min_val = new Vector3(minval_x, minval_y, minval);
-		LineRenderer lr = transform.GetComponent<LineRenderer>();
-		point = new DrawCircle(lr, current_min_val);
-		gezeichnetePunkte.Add(current_min_val);
 	}
 }

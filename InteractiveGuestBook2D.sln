@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2015
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InteractiveGuestBook2D.CSharp.Plugins", "InteractiveGuestBook2D.CSharp.Plugins.csproj", "{1563BDB2-E961-5483-C0C2-B072E4F3C4C1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InteractiveGuestBook2D.CSharp", "InteractiveGuestBook2D.CSharp.csproj", "{B4A1F7F0-36B4-5595-31C7-34811679C18F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InteractiveGuestBook2D.CSharp.Editor.Plugins", "InteractiveGuestBook2D.CSharp.Editor.Plugins.csproj", "{6B18ECF1-4850-D288-A5C2-2C182D41C35E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1563BDB2-E961-5483-C0C2-B072E4F3C4C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1563BDB2-E961-5483-C0C2-B072E4F3C4C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1563BDB2-E961-5483-C0C2-B072E4F3C4C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1563BDB2-E961-5483-C0C2-B072E4F3C4C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4A1F7F0-36B4-5595-31C7-34811679C18F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4A1F7F0-36B4-5595-31C7-34811679C18F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4A1F7F0-36B4-5595-31C7-34811679C18F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4A1F7F0-36B4-5595-31C7-34811679C18F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B18ECF1-4850-D288-A5C2-2C182D41C35E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B18ECF1-4850-D288-A5C2-2C182D41C35E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B18ECF1-4850-D288-A5C2-2C182D41C35E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B18ECF1-4850-D288-A5C2-2C182D41C35E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

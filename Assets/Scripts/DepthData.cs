@@ -13,16 +13,15 @@ public class DepthData : MonoBehaviour {
 
 	//Angabe in mm
 	private float leinwand = 1000;
+	private int treshold = 30;
+	private float right_side_limit = 595;
 
 	// 1 -> x, 2 -> y, 3 -> minval
-	private ArrayList drawedPoints = new ArrayList();
+	//private ArrayList drawedPoints = new ArrayList();
 
 	//Create new GameObject (Circle)
 	public GameObject theCircle;
 	private GameObject instance;
-
-	//Angabe in mm
-	private int treshold = 30;
 
 	// Use this for initialization
 	void Start() {
@@ -51,9 +50,15 @@ public class DepthData : MonoBehaviour {
 			for (int y = 0; y < height; y++) {
 
 				if (depths[y * width + x] < (leinwand - treshold) && depths[y * width + x] != 0) {
+					if (x >= 515) {
+						if (10 < y  && y < 40) {
+							Debug.Log("drin");
+							instance.GetComponent<Renderer>().material.color = Color.red;
+						}
+					}
 
 					//check the depths of the pixel next to the current to reduce voice
-					if ((depths[y * width + x] - depths[y * width + x - 1]) <= 100) {
+					if ((depths[y * width + x] - depths[y * width + x - 1]) <= 50 && x < right_side_limit) {
 						minval = depths[y * width + x];
 
 						minval_x = x;
@@ -68,6 +73,6 @@ public class DepthData : MonoBehaviour {
 			}
 		}
 		
-		Debug.Log(minval + "-" + minval_x + "-" + minval_y);
+		//Debug.Log(minval + "-" + minval_x + "-" + minval_y);
 	}
 }

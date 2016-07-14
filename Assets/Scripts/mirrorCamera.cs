@@ -16,11 +16,11 @@ public class mirrorCamera : MonoBehaviour {
 
 	// Set it to true so we can watch the flipped Objects
 	void OnPreRender() {
-		GL.SetRevertBackfacing(true);
+		GL.invertCulling = true;
 	}
 
 	// Set it to false again because we dont want to affect all other cammeras.
 	void OnPostRender() {
-		GL.SetRevertBackfacing(false);
+		GL.invertCulling = false;
 	}
 }

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using Windows.Kinect;
+using System.IO;
 
 public class DepthData : MonoBehaviour {
 	public GameObject DepthSrcMan;
@@ -12,8 +13,9 @@ public class DepthData : MonoBehaviour {
 	private int height = 424;
 
 	//Angabe in mm
-	private float leinwand = 1000;
-	private int treshold = 30;
+	private float screen_depth = 0;
+	private int mintreshold = 60;
+	private int maxtreshold = 250;
 	private float right_side_limit = 498;
 
 	private Color color = new Color(0,0,0);
@@ -27,8 +29,10 @@ public class DepthData : MonoBehaviour {
 
 	//Canvas Action
 	public GameObject canvas;
+	private int first_screen;
 
 	private Texture2D tex;
+	public 
 
 	// Use this for initialization
 	void Start() {
@@ -37,15 +41,17 @@ public class DepthData : MonoBehaviour {
 		} else {
 			depthManager = DepthSrcMan.GetComponent<MultiSourceManager>();
 			canvas.SetActive(false);
-			RenderTexture rt = new RenderTexture(256, 256, 16, RenderTextureFormat.ARGB32);
-			rt.Create();
-			tex = CurrentFrame.GetRTPixels(rt);
+			byte[] imageFile = File.ReadAllBytes("../interactiveGuestBook/Assets/Sprites/color_wheel.jpg");
+			Debug.Log(imageFile);
+			tex = new Texture2D(1,1);
+			tex.LoadImage(imageFile);
+
+			first_screen = 0;
 		}
 	}
 
 	// Update is called once per frame
 	void Update() {
-
 		float minval = 10000;
 		int minval_x = 0;
 		int minval_y = 0;
@@ -57,14 +63,30 @@ public class DepthData : MonoBehaviour {
 
 		depths = depthManager.GetDepthData();
 
+		if (first_screen == 180) {
+			screen_depth = (depths[72397] + depths[72499] + depths[108800] + depths[144589] + depths[144691]) / 5;
+			Debug.Log(screen_depth);
+			first_screen = 10000;
+		}
+		else if (first_screen < 180) {
+			first_screen++;
+		}
+
+		if (screen_depth == 0) {
+			return;
+		}
+
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
-
-				if (depths[y * width + x] < (leinwand - treshold) && depths[y * width + x] != 0) {
-					if (canvas.activeSelf == false && (depths[y * width + x] - depths[y * width + x - 1]) <= 50) {
+				if (depths[y * width + x] < (screen_depth - mintreshold) && depths[y * width + x] != 0) {
+					if (canvas.activeSelf == false && (depths[y * width + x] - depths[y * width + x - 1]) <= 10 
+						&& (depths[y * width + x] - depths[y * width + x - 2]) <= 10 
+						&& (depths[y * width + x] - depths[y * width + x + 1]) <= 10
+						&& (depths[y * width + x] > screen_depth - maxtreshold)) {
 						if (x > right_side_limit) {
 							//color = new Color(255, 0, 0);
 							canvas.SetActive(true);
+							Debug.Log("show Canvas");
 						}
 
 						//check the depths of the pixel next to the current to reduce voice
@@ -79,13 +101,18 @@ public class DepthData : MonoBehaviour {
 							instance.GetComponent<Renderer>().material.color = color;
 						}
 
-					} else {
+					} else if (canvas.activeSelf == true){
 
 						if (x < 200) {
+							//canvas.SetActive(false);
+						} else if ((depths[y * width + x] - depths[y * width + x - 1]) <= 10
+									&& (depths[y * width + x] - depths[y * width + x - 2]) <= 10
+									&& (depths[y * width + x] - depths[y * width + x + 1]) <= 10
+									&& 90 < x && x < 400) {
+							color = tex.GetPixel(x, y);
+							Debug.Log(color);
 							canvas.SetActive(false);
 						}
-
-						//color = tex.GetPixel(x, y);
 					}
 
 				}

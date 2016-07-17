@@ -19,14 +19,14 @@ public class DepthData : MonoBehaviour {
 	private byte maxtreshold = 100;
 	private ushort right_side_limit = 498;
 
-	private ushort bigDifference = 10;
+	private ushort bigDifference = 5;
 
 	private int secondFrame = 0;
 
 	private Color color = new Color(0,0,0);
 
 	// 1 -> x, 2 -> y, 3 -> minval
-	//private ArrayList drawedPoints = new ArrayList();
+	//private ArrayList pointsToDraw = new ArrayList();
 
 	//Create new GameObject (Circle)
 	public GameObject theCircle;
@@ -51,55 +51,41 @@ public class DepthData : MonoBehaviour {
 			tex.LoadImage(imageFile);
 
 			first_screen = 0;
+
 		}
 	}
 
 	// Update is called once per frame
 	void Update() {
-		if (secondFrame == 4) {
-			float minval = 10000;
-			int minval_x = 0;
-			int minval_y = 0;
+		float minval = 10000;
+		int minval_x = 0;
+		int minval_y = 0;
 
-			if (depthManager == null) {
-				Debug.Log("depthManager = null");
-				return;
-			}
+		if (depthManager == null) {
+			Debug.Log("depthManager = null");
+			return;
+		}
 
-			depths = depthManager.GetDepthData();
+		depths = depthManager.GetDepthData();
 
-			if (first_screen == 180) {
-				screen_depth = (depths[72397] + depths[72499] + depths[108800] + depths[144589] + depths[144691]) / 5;
-				Debug.Log(screen_depth);
-				first_screen = 10000;
-			} else if (first_screen < 180) {
-				first_screen++;
-			}
+		if (first_screen == 180) {
+			screen_depth = (depths[72397] + depths[72499] + depths[108800] + depths[144589] + depths[144691]) / 5;
+			Debug.Log(screen_depth);
+			first_screen = 10000;
+		} else if (first_screen < 180) {
+			first_screen++;
+		}
 
-			if (screen_depth == 0) {
-				return;
-			}
+		if (screen_depth == 0) {
+			return;
+		}
+		if (secondFrame == 0) {
 
-			for (int x = 0; x < width; x = x + 5) {
-				for (int y = 0; y < height; y = y + 5) {
-					if (depths[y * width + x] < (screen_depth - mintreshold) && depths[y * width + x] != 0) {
-						if (x > 0 && y > 0 && y < (height - 1) && x < (width - 1)) {
-							try {
-								if (canvas.activeSelf == false
-
-								&& (Math.Abs(depths[(y - 1) * width + (x - 1)] - depths[y * width + x])) <= bigDifference
-								&& (Math.Abs(depths[(y - 1) * width + x] - depths[y * width + x])) <= bigDifference
-								&& (Math.Abs(depths[(y - 1) * width + (x + 1)] - depths[y * width + x])) <= bigDifference
-
-								&& (Math.Abs(depths[y * width + (x - 1)] - depths[y * width + x])) <= bigDifference
-								&& (Math.Abs(depths[y * width + x] - depths[y * width + x])) <= bigDifference
-								&& (Math.Abs(depths[y * width + (x + 1)] - depths[y * width + x])) <= bigDifference
-
-								&& (Math.Abs(depths[(y + 1) * width + (x - 1)] - depths[y * width + x])) <= bigDifference
-								&& (Math.Abs(depths[(y + 1) * width + x] - depths[y * width + x])) <= bigDifference
-								&& (Math.Abs(depths[(y + 1) * width + (x + 1)] - depths[y * width + x])) <= bigDifference
-
-								&& (depths[y * width + x] > screen_depth - maxtreshold)) {
+			for (int x = 0; x < width; x = x + 1) {
+				for (int y = 0; y < height; y = y + 1) {
+					if (depths[y * width + x] < (screen_depth - mintreshold) && depths[y * width + x] < minval && depths[y * width + x] != 0) {
+						
+								if (canvas.activeSelf == false && isInAllowedRange(x, y) && (depths[y * width + x] > screen_depth - maxtreshold)) {
 
 									if (x > right_side_limit) {
 										//color = new Color(255, 0, 0);
@@ -132,11 +118,7 @@ public class DepthData : MonoBehaviour {
 										canvas.SetActive(false);
 									}
 								}
-							} catch (IndexOutOfRangeException e) {
-								Debug.Log("IndexOutOfRangeException bei x=" + x + " y=" + y);
-								Debug.Log(e.StackTrace);
-							}
-						}
+							
 					}
 
 				}
@@ -148,5 +130,33 @@ public class DepthData : MonoBehaviour {
 		}
 		
 		//Debug.Log(minval + "-" + minval_x + "-" + minval_y);
+	}
+
+	public bool isInAllowedRange(int x, int y) {
+		if (x > 0 && y > 0 && y < (height - 1) && x < (width - 1)) {
+			try {
+				if ((Math.Abs(depths[(y - 1) * width + (x - 1)] - depths[y * width + x])) <= bigDifference
+				&& (Math.Abs(depths[(y - 1) * width + x] - depths[y * width + x])) <= bigDifference
+				&& (Math.Abs(depths[(y - 1) * width + (x + 1)] - depths[y * width + x])) <= bigDifference
+
+				&& (Math.Abs(depths[y * width + (x - 1)] - depths[y * width + x])) <= bigDifference
+				&& (Math.Abs(depths[y * width + (x + 1)] - depths[y * width + x])) <= bigDifference
+
+				&& (Math.Abs(depths[(y + 1) * width + (x - 1)] - depths[y * width + x])) <= bigDifference
+				&& (Math.Abs(depths[(y + 1) * width + x] - depths[y * width + x])) <= bigDifference
+				&& (Math.Abs(depths[(y + 1) * width + (x + 1)] - depths[y * width + x])) <= bigDifference) {
+
+					return true;
+				}
+
+				return false;
+
+			} catch (IndexOutOfRangeException e) {
+				Debug.Log("IndexOutOfRangeException bei x=" + x + " y=" + y);
+				Debug.Log(e.StackTrace);
+			}
+
+		}
+		return false;
 	}
 }

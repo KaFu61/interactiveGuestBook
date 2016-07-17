@@ -2,6 +2,7 @@
 using System.Collections;
 using Windows.Kinect;
 using System.IO;
+using System;
 
 public class DepthData : MonoBehaviour {
 	public GameObject DepthSrcMan;
@@ -14,9 +15,13 @@ public class DepthData : MonoBehaviour {
 
 	//Angabe in mm
 	private float screen_depth = 0;
-	private int mintreshold = 60;
-	private int maxtreshold = 250;
-	private float right_side_limit = 498;
+	private byte mintreshold = 60;
+	private byte maxtreshold = 100;
+	private ushort right_side_limit = 498;
+
+	private ushort bigDifference = 10;
+
+	private int secondFrame = 0;
 
 	private Color color = new Color(0,0,0);
 
@@ -32,7 +37,6 @@ public class DepthData : MonoBehaviour {
 	private int first_screen;
 
 	private Texture2D tex;
-	public 
 
 	// Use this for initialization
 	void Start() {
@@ -52,72 +56,95 @@ public class DepthData : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update() {
-		float minval = 10000;
-		int minval_x = 0;
-		int minval_y = 0;
-		
-		if (depthManager == null) {
-			Debug.Log("depthManager = null");
-			return;
-		}
+		if (secondFrame == 4) {
+			float minval = 10000;
+			int minval_x = 0;
+			int minval_y = 0;
 
-		depths = depthManager.GetDepthData();
+			if (depthManager == null) {
+				Debug.Log("depthManager = null");
+				return;
+			}
 
-		if (first_screen == 180) {
-			screen_depth = (depths[72397] + depths[72499] + depths[108800] + depths[144589] + depths[144691]) / 5;
-			Debug.Log(screen_depth);
-			first_screen = 10000;
-		}
-		else if (first_screen < 180) {
-			first_screen++;
-		}
+			depths = depthManager.GetDepthData();
 
-		if (screen_depth == 0) {
-			return;
-		}
+			if (first_screen == 180) {
+				screen_depth = (depths[72397] + depths[72499] + depths[108800] + depths[144589] + depths[144691]) / 5;
+				Debug.Log(screen_depth);
+				first_screen = 10000;
+			} else if (first_screen < 180) {
+				first_screen++;
+			}
 
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
-				if (depths[y * width + x] < (screen_depth - mintreshold) && depths[y * width + x] != 0) {
-					if (canvas.activeSelf == false && (depths[y * width + x] - depths[y * width + x - 1]) <= 10 
-						&& (depths[y * width + x] - depths[y * width + x - 2]) <= 10 
-						&& (depths[y * width + x] - depths[y * width + x + 1]) <= 10
-						&& (depths[y * width + x] > screen_depth - maxtreshold)) {
-						if (x > right_side_limit) {
-							//color = new Color(255, 0, 0);
-							canvas.SetActive(true);
-							Debug.Log("show Canvas");
-						}
+			if (screen_depth == 0) {
+				return;
+			}
 
-						//check the depths of the pixel next to the current to reduce voice
-						if (x < right_side_limit) {
-							minval = depths[y * width + x];
+			for (int x = 0; x < width; x = x + 5) {
+				for (int y = 0; y < height; y = y + 5) {
+					if (depths[y * width + x] < (screen_depth - mintreshold) && depths[y * width + x] != 0) {
+						if (x > 0 && y > 0 && y < (height - 1) && x < (width - 1)) {
+							try {
+								if (canvas.activeSelf == false
 
-							minval_x = x;
-							minval_y = y;
+								&& (Math.Abs(depths[(y - 1) * width + (x - 1)] - depths[y * width + x])) <= bigDifference
+								&& (Math.Abs(depths[(y - 1) * width + x] - depths[y * width + x])) <= bigDifference
+								&& (Math.Abs(depths[(y - 1) * width + (x + 1)] - depths[y * width + x])) <= bigDifference
 
-							Vector3 current_min_val = new Vector3(minval_x, minval_y, minval);
-							instance = (GameObject)Instantiate(theCircle, new Vector3(minval_x, minval_y, 1), transform.rotation);
-							instance.GetComponent<Renderer>().material.color = color;
-						}
+								&& (Math.Abs(depths[y * width + (x - 1)] - depths[y * width + x])) <= bigDifference
+								&& (Math.Abs(depths[y * width + x] - depths[y * width + x])) <= bigDifference
+								&& (Math.Abs(depths[y * width + (x + 1)] - depths[y * width + x])) <= bigDifference
 
-					} else if (canvas.activeSelf == true){
+								&& (Math.Abs(depths[(y + 1) * width + (x - 1)] - depths[y * width + x])) <= bigDifference
+								&& (Math.Abs(depths[(y + 1) * width + x] - depths[y * width + x])) <= bigDifference
+								&& (Math.Abs(depths[(y + 1) * width + (x + 1)] - depths[y * width + x])) <= bigDifference
 
-						if (x < 200) {
-							//canvas.SetActive(false);
-						} else if ((depths[y * width + x] - depths[y * width + x - 1]) <= 10
-									&& (depths[y * width + x] - depths[y * width + x - 2]) <= 10
-									&& (depths[y * width + x] - depths[y * width + x + 1]) <= 10
-									&& 90 < x && x < 400) {
-							color = tex.GetPixel(x, y);
-							Debug.Log(color);
-							canvas.SetActive(false);
+								&& (depths[y * width + x] > screen_depth - maxtreshold)) {
+
+									if (x > right_side_limit) {
+										//color = new Color(255, 0, 0);
+										canvas.SetActive(true);
+										Debug.Log("show Canvas");
+									}
+
+									//check the depths of the pixel next to the current to reduce voice
+									if (x < right_side_limit) {
+										minval = depths[y * width + x];
+
+										minval_x = x;
+										minval_y = y;
+
+										Vector3 current_min_val = new Vector3(minval_x, minval_y, minval);
+										instance = (GameObject)Instantiate(theCircle, new Vector3(minval_x, minval_y, 1), transform.rotation);
+										instance.GetComponent<Renderer>().material.color = color;
+									}
+
+								} else if (canvas.activeSelf == true) {
+
+									if (x < 200) {
+										//canvas.SetActive(false);
+									} else if ((depths[y * width + x] - depths[y * width + x - 1]) <= 10
+												&& (depths[y * width + x] - depths[y * width + x - 2]) <= 10
+												&& (depths[y * width + x] - depths[y * width + x + 1]) <= 10
+												&& 90 < x && x < 400) {
+										color = tex.GetPixel(x, y);
+										Debug.Log(color);
+										canvas.SetActive(false);
+									}
+								}
+							} catch (IndexOutOfRangeException e) {
+								Debug.Log("IndexOutOfRangeException bei x=" + x + " y=" + y);
+								Debug.Log(e.StackTrace);
+							}
 						}
 					}
 
 				}
-
 			}
+
+			secondFrame = 0;
+		} else {
+			secondFrame++;
 		}
 		
 		//Debug.Log(minval + "-" + minval_x + "-" + minval_y);

@@ -3,6 +3,7 @@ using System.Collections;
 using Windows.Kinect;
 using System.IO;
 using System;
+using System.Collections.Generic;
 
 public class DepthData : MonoBehaviour {
 	public GameObject DepthSrcMan;
@@ -19,14 +20,15 @@ public class DepthData : MonoBehaviour {
 	private byte maxtreshold = 100;
 	private ushort right_side_limit = 498;
 
-	private ushort bigDifference = 5;
+	private ushort bigDifference = 3;
 
 	private int secondFrame = 0;
 
 	private Color color = new Color(0,0,0);
 
 	// 1 -> x, 2 -> y, 3 -> minval
-	//private ArrayList pointsToDraw = new ArrayList();
+	private List<Vector3> pointsToDraw = new List<Vector3>();
+	private int maxPointsToDraw = 200;
 
 	//Create new GameObject (Circle)
 	public GameObject theCircle;
@@ -46,7 +48,6 @@ public class DepthData : MonoBehaviour {
 			depthManager = DepthSrcMan.GetComponent<MultiSourceManager>();
 			canvas.SetActive(false);
 			byte[] imageFile = File.ReadAllBytes("../interactiveGuestBook/Assets/Sprites/color_wheel.jpg");
-			Debug.Log(imageFile);
 			tex = new Texture2D(1,1);
 			tex.LoadImage(imageFile);
 
@@ -60,6 +61,9 @@ public class DepthData : MonoBehaviour {
 		float minval = 10000;
 		int minval_x = 0;
 		int minval_y = 0;
+
+		//delete lists content to produce a new one for this frame
+		pointsToDraw.Clear();
 
 		if (depthManager == null) {
 			Debug.Log("depthManager = null");
@@ -85,39 +89,38 @@ public class DepthData : MonoBehaviour {
 				for (int y = 0; y < height; y = y + 1) {
 					if (depths[y * width + x] < (screen_depth - mintreshold) && depths[y * width + x] < minval && depths[y * width + x] != 0) {
 						
-								if (canvas.activeSelf == false && isInAllowedRange(x, y) && (depths[y * width + x] > screen_depth - maxtreshold)) {
+						if (canvas.activeSelf == false && isInAllowedRange(x, y) && (depths[y * width + x] > screen_depth - maxtreshold)) {
 
-									if (x > right_side_limit) {
-										//color = new Color(255, 0, 0);
-										canvas.SetActive(true);
-										Debug.Log("show Canvas");
-									}
+							if (x > right_side_limit) {
+								//color = new Color(255, 0, 0);
+								canvas.SetActive(true);
+								Debug.Log("show Canvas");
+							}
 
-									//check the depths of the pixel next to the current to reduce voice
-									if (x < right_side_limit) {
-										minval = depths[y * width + x];
+							//check the depths of the pixel next to the current to reduce voice
+							if (x < right_side_limit) {
+								minval = depths[y * width + x];
 
-										minval_x = x;
-										minval_y = y;
+								minval_x = x;
+								minval_y = y;
 
-										Vector3 current_min_val = new Vector3(minval_x, minval_y, minval);
-										instance = (GameObject)Instantiate(theCircle, new Vector3(minval_x, minval_y, 1), transform.rotation);
-										instance.GetComponent<Renderer>().material.color = color;
-									}
+								Vector3 current_min_val = new Vector3(minval_x, minval_y, minval);
+								getPointsToDraw(current_min_val);
+							}
 
-								} else if (canvas.activeSelf == true) {
+						} else if (canvas.activeSelf == true) {
 
-									if (x < 200) {
-										//canvas.SetActive(false);
-									} else if ((depths[y * width + x] - depths[y * width + x - 1]) <= 10
-												&& (depths[y * width + x] - depths[y * width + x - 2]) <= 10
-												&& (depths[y * width + x] - depths[y * width + x + 1]) <= 10
-												&& 90 < x && x < 400) {
-										color = tex.GetPixel(x, y);
-										Debug.Log(color);
-										canvas.SetActive(false);
-									}
-								}
+							if (x < 200) {
+								//canvas.SetActive(false);
+							} else if ((depths[y * width + x] - depths[y * width + x - 1]) <= 10
+										&& (depths[y * width + x] - depths[y * width + x - 2]) <= 10
+										&& (depths[y * width + x] - depths[y * width + x + 1]) <= 10
+										&& 90 < x && x < 400) {
+								color = tex.GetPixel(x, y);
+								Debug.Log(color);
+								canvas.SetActive(false);
+							}
+						}
 							
 					}
 
@@ -127,6 +130,11 @@ public class DepthData : MonoBehaviour {
 			secondFrame = 0;
 		} else {
 			secondFrame++;
+		}
+
+		foreach (Vector3 point in pointsToDraw) {
+			instance = (GameObject)Instantiate(theCircle, new Vector3(point.x, point.y, 1), transform.rotation);
+			instance.GetComponent<Renderer>().material.color = color;
 		}
 		
 		//Debug.Log(minval + "-" + minval_x + "-" + minval_y);
@@ -158,5 +166,29 @@ public class DepthData : MonoBehaviour {
 
 		}
 		return false;
+	}
+
+	public void getPointsToDraw(Vector3 currentPixel) {
+		if(pointsToDraw.Count == 0) {
+			pointsToDraw.Add(currentPixel);
+		} else {
+			int i = pointsToDraw.Count;
+
+			try {
+				while (i > 0 && currentPixel.z < pointsToDraw[i-1].z) {
+					i--;
+				}
+			} catch (ArgumentOutOfRangeException ex) {
+				Debug.Log(i);
+			}
+			
+			if (i < maxPointsToDraw) {
+				pointsToDraw.Insert(i, currentPixel);
+			}
+
+			if (pointsToDraw.Count > maxPointsToDraw) {
+				pointsToDraw.RemoveAt(maxPointsToDraw);
+			}
+		}	
 	}
 }

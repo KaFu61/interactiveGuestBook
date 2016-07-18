@@ -11,7 +11,7 @@ public class mirrorCamera : MonoBehaviour {
 	void OnPreCull() {
 		camera.ResetWorldToCameraMatrix();
 		camera.ResetProjectionMatrix();
-		camera.projectionMatrix = camera.projectionMatrix * Matrix4x4.Scale(new Vector3(1, -1, 1));
+		camera.projectionMatrix = camera.projectionMatrix * Matrix4x4.Scale(new Vector3(1, -1, 1)) * Matrix4x4.Scale(new Vector3(-1, 1, 1));
 	}
 
 	// Set it to true so we can watch the flipped Objects

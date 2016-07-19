@@ -63,8 +63,15 @@ public class DepthData : MonoBehaviour {
 
 	// Update is called once per frame
 	void Update() {
+
 		if (Input.GetKeyDown(KeyCode.Escape)) {
 			Application.Quit();
+		}
+
+		if (Input.GetKeyDown(KeyCode.P)) {
+			DateTime currentDate = DateTime.Now;
+			Application.CaptureScreenshot(Application.dataPath + "/screenshots/screenshot_" + currentDate.Year + currentDate.Month + currentDate.Day + currentDate.Hour + currentDate.Minute + ".png");
+			Debug.Log(Application.dataPath  + "/screenshots/screenshot_" + currentDate.Year + currentDate.Month + currentDate.Day + currentDate.Hour + currentDate.Minute + ".png");
 		}
 
 		float minval = 10000;

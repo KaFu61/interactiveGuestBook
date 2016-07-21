@@ -41,10 +41,9 @@ public class DepthData : MonoBehaviour {
 	private int frames_to_wait_canvas = 0;
 
 	private int waiting_frames = 50;
+	private ushort only_second_frame = 0;
 
 	private bool has_drawn = false;
-
-	private bool screenshot_saved;
 
 	private Texture2D tex;
 
@@ -70,7 +69,7 @@ public class DepthData : MonoBehaviour {
 			Application.Quit();
 		}
 
-		if (Input.GetKeyDown(KeyCode.P)) {
+		if (Input.GetKeyDown(KeyCode.Return)) {
 			takePicture();
 		}
 
@@ -104,70 +103,76 @@ public class DepthData : MonoBehaviour {
 			frames_to_wait_canvas--;
 			return;
 		}
-		
-		for (int x = 0; x < width; x = x + 1) {
-			for (int y = 0; y < height; y = y + 1) {
-				if (depths[y * width + x] < (screen_depth - mintreshold) && depths[y * width + x] < minval && depths[y * width + x] != 0 && isInAllowedRange(x, y)) {
 
-					if (canvas.activeSelf == false && (depths[y * width + x] > screen_depth - maxtreshold)) {
+		if (only_second_frame == 1) {
+			for (int x = 0; x < width; x = x + 1) {
+				for (int y = 0; y < height; y = y + 1) {
+					if (depths[y * width + x] < (screen_depth - mintreshold) && depths[y * width + x] < minval && depths[y * width + x] != 0 && isInAllowedRange(x, y)) {
 
-						if (x > right_side_limit) {
-							canvas.SetActive(true);
-							frames_to_wait_canvas = waiting_frames;
+						if (canvas.activeSelf == false && (depths[y * width + x] > screen_depth - maxtreshold)) {
+
+							if (x > right_side_limit) {
+								canvas.SetActive(true);
+								frames_to_wait_canvas = waiting_frames;
+							}
+
+							if (x < 70 && y > height - 40) {
+								clearScreen();
+								screen_depth = getScreenDepth();
+								frames_to_wait_canvas = waiting_frames;
+								return;
+							}
+
+							if (x < right_side_limit) {
+								minval = depths[y * width + x];
+
+								minval_x = x;
+								minval_y = y;
+
+								current_minval = new Vector3(minval_x, minval_y, minval);
+							}
+
+						} else if (canvas.activeSelf == true) {
+							if (x > width - right_side_limit && x < right_side_limit) {
+								color = tex.GetPixel(x, y);
+								canvas.SetActive(false);
+								frames_to_wait_canvas = waiting_frames;
+							} else if (x < width - right_side_limit) {
+								canvas.SetActive(false);
+								frames_to_wait_canvas = waiting_frames;
+							}
 						}
 
-						if (x < 70 && y > height - 40) {
-							clearScreen();
-							screen_depth = getScreenDepth();
-							frames_to_wait_canvas = waiting_frames;
-							return;
-						}
-						
-						if (x < right_side_limit) {
-							minval = depths[y * width + x];
-
-							minval_x = x;
-							minval_y = y;
-
-							current_minval = new Vector3(minval_x, minval_y, minval);
-						}
-
-					} else if (canvas.activeSelf == true) {
-						if (x > width - right_side_limit && x < right_side_limit) {
-							color = tex.GetPixel(x, y);
-							canvas.SetActive(false);
-							frames_to_wait_canvas = waiting_frames;
-						} else if (x < width - right_side_limit) {
-							canvas.SetActive(false);
-							frames_to_wait_canvas = waiting_frames;
-						}
 					}
 
 				}
-
-			}
-		}
-
-		if (frames_to_wait_canvas == 0 && current_minval != new Vector3(0,0,0)) {
-			instance = (GameObject)Instantiate(the_circle, new Vector3(current_minval.x, current_minval.y, z), transform.rotation);
-			instance.GetComponent<Renderer>().material.color = color;
-			instance.name = "circle_" + circleCount;
-			circleCount++;
-			byte point_size = (byte)(2 + (screen_depth - mintreshold - current_minval.z) / 10);
-			instance.GetComponent<Renderer>().transform.localScale = new Vector3(point_size, point_size, 1);
-			z = z - 0.001f;
-
-			has_drawn = true;
-
-			if(last_minval != new Vector3(0,0,0)){
-				drawLine(new Vector3(last_minval.x, last_minval.y, z), new Vector3(current_minval.x, current_minval.y, z), color, point_size);
 			}
 
-			last_minval = current_minval;
-		}
+			if (frames_to_wait_canvas == 0 && current_minval != new Vector3(0, 0, 0)) {
+				instance = (GameObject)Instantiate(the_circle, new Vector3(current_minval.x, current_minval.y, z), transform.rotation);
+				instance.GetComponent<Renderer>().material.color = color;
+				instance.name = "circle_" + circleCount;
+				circleCount++;
+				byte point_size = (byte)(2 + (screen_depth - mintreshold - current_minval.z) / 10);
+				instance.GetComponent<Renderer>().transform.localScale = new Vector3(point_size, point_size, 1);
+				z = z - 0.001f;
 
-		if (!has_drawn) {
-			last_minval = new Vector3(0, 0, 0);
+				has_drawn = true;
+
+				if (last_minval != new Vector3(0, 0, 0)) {
+					drawLine(new Vector3(last_minval.x, last_minval.y, z), new Vector3(current_minval.x, current_minval.y, z), color, point_size);
+				}
+
+				last_minval = current_minval;
+			}
+
+			if (!has_drawn) {
+				last_minval = new Vector3(0, 0, 0);
+			}
+
+			only_second_frame = 0;
+		} else {
+			only_second_frame++;
 		}
 		
 	}
@@ -231,8 +236,7 @@ public class DepthData : MonoBehaviour {
 
 	void takePicture() {
 		DateTime currentDate = DateTime.Now;
-		Application.CaptureScreenshot(Application.dataPath + "/screenshots/screenshot_"
-			+ currentDate.Year + currentDate.Month + currentDate.Day + currentDate.Hour + currentDate.Minute + +currentDate.Second + ".png");
+		Application.CaptureScreenshot("screenshots/screenshot_" + currentDate.Year + currentDate.Month + currentDate.Day + currentDate.Hour + currentDate.Minute + +currentDate.Second + ".png");
 	}
 
 	void clearScreen() {
@@ -241,5 +245,6 @@ public class DepthData : MonoBehaviour {
 			GameObject.Destroy(GameObject.Find("circle_" + i));
 		}
 		circleCount = 0;
+		color = new Color(0, 0, 0);
 	}
 }

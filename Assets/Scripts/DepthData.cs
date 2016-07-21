@@ -22,8 +22,6 @@ public class DepthData : MonoBehaviour {
 
 	private byte big_difference = 3;
 
-	private int secondFrame = 0;
-
 	private Color color = new Color(0,0,0);
 
 	private Vector3 current_minval = new Vector3(0,0,0);
@@ -32,6 +30,8 @@ public class DepthData : MonoBehaviour {
 	//Create new GameObject (Circle)
 	public GameObject the_circle;
 	public GameObject instance;
+
+	private int circleCount = 0;
 
 	private float z = 900;
 
@@ -43,6 +43,8 @@ public class DepthData : MonoBehaviour {
 	private int waiting_frames = 50;
 
 	private bool has_drawn = false;
+
+	private bool screenshot_saved;
 
 	private Texture2D tex;
 
@@ -69,9 +71,7 @@ public class DepthData : MonoBehaviour {
 		}
 
 		if (Input.GetKeyDown(KeyCode.P)) {
-			DateTime currentDate = DateTime.Now;
-			Application.CaptureScreenshot(Application.dataPath + "/screenshots/screenshot_" + currentDate.Year + currentDate.Month + currentDate.Day + currentDate.Hour + currentDate.Minute + ".png");
-			Debug.Log(Application.dataPath  + "/screenshots/screenshot_" + currentDate.Year + currentDate.Month + currentDate.Day + currentDate.Hour + currentDate.Minute + ".png");
+			takePicture();
 		}
 
 		float minval = 10000;
@@ -116,7 +116,13 @@ public class DepthData : MonoBehaviour {
 							frames_to_wait_canvas = waiting_frames;
 						}
 
-						//check the depths of the pixel next to the current to reduce voice
+						if (x < 70 && y > height - 40) {
+							clearScreen();
+							screen_depth = getScreenDepth();
+							frames_to_wait_canvas = waiting_frames;
+							return;
+						}
+						
 						if (x < right_side_limit) {
 							minval = depths[y * width + x];
 
@@ -145,14 +151,15 @@ public class DepthData : MonoBehaviour {
 		if (frames_to_wait_canvas == 0 && current_minval != new Vector3(0,0,0)) {
 			instance = (GameObject)Instantiate(the_circle, new Vector3(current_minval.x, current_minval.y, z), transform.rotation);
 			instance.GetComponent<Renderer>().material.color = color;
-			byte point_size = (byte)(1+ (screen_depth - mintreshold - current_minval.z) / 10);
+			instance.name = "circle_" + circleCount;
+			circleCount++;
+			byte point_size = (byte)(2 + (screen_depth - mintreshold - current_minval.z) / 10);
 			instance.GetComponent<Renderer>().transform.localScale = new Vector3(point_size, point_size, 1);
 			z = z - 0.001f;
 
 			has_drawn = true;
 
 			if(last_minval != new Vector3(0,0,0)){
-				Debug.Log(last_minval);
 				drawLine(new Vector3(last_minval.x, last_minval.y, z), new Vector3(current_minval.x, current_minval.y, z), color, point_size);
 			}
 
@@ -211,7 +218,7 @@ public class DepthData : MonoBehaviour {
 
 	void drawLine(Vector3 start, Vector3 end, Color color, float point_size) {
 		GameObject myLine = new GameObject();
-		myLine.name = "line";
+		myLine.name = "line_" + circleCount;
 		myLine.transform.position = start;
 		myLine.AddComponent<LineRenderer>();
 		LineRenderer lr = myLine.GetComponent<LineRenderer>();
@@ -220,5 +227,19 @@ public class DepthData : MonoBehaviour {
 		lr.SetWidth(point_size, point_size);
 		lr.SetPosition(0, start);
 		lr.SetPosition(1, end);
+	}
+
+	void takePicture() {
+		DateTime currentDate = DateTime.Now;
+		Application.CaptureScreenshot(Application.dataPath + "/screenshots/screenshot_"
+			+ currentDate.Year + currentDate.Month + currentDate.Day + currentDate.Hour + currentDate.Minute + +currentDate.Second + ".png");
+	}
+
+	void clearScreen() {
+		for (int i = 0; i < circleCount + 2; i++) {
+			GameObject.Destroy(GameObject.Find("line_" + i));
+			GameObject.Destroy(GameObject.Find("circle_" + i));
+		}
+		circleCount = 0;
 	}
 }
